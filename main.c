@@ -18,13 +18,16 @@ char white[12]="\033[0;0m";
 // functions prototype
 void gotoPage(int page);
 void gotoxy(int x, int y );
+void noteCurdOP(int pageY);
 void header();
 void hero();
 void mainPage();
 void createCategory();
 void notesDisplay();
 void createNote();
-void getCurrentDateTime();
+void deleteNote();
+void editNote();
+// void getCurrentDateTime();
 
 struct categoryProps {
     int id;
@@ -36,6 +39,7 @@ struct notesProps{
     char title [100];
     char content [1000];
 };
+char *noteCRUD[3]={"back","edit","delete"};
 typedef struct categoryProps catPP;
 typedef struct notesProps notePP;
 
@@ -53,6 +57,9 @@ int running = 1;
 int ant=0;
 int subAnt=0;
 int noteInPage=0;
+int mainX=50;
+int textX=12;
+int lastborderX=31;
 catPP *Mpp;
 notePP *Npp,*subNpp;
 
@@ -77,16 +84,21 @@ void keyControl(int totalNote,char key[4]) {
     int ch;
 
     while (1) {
+        if(strcmp(key,"crud")!=0){
         header();
+        }
 
         int tempTotalNote=totalNote;
         if(strcmp(key,"Mpp")==0){
             displayPage(totalNote,"Mpp");
-        }else{
+        }elif(strcmp(key,"Npp")==0){
             tempTotalNote=noteInPage;
             displayPage(tempTotalNote,"Npp");
+        }else{
+            tempTotalNote=1;
+            noteCurdOP(totalNote);
         }
-        getCurrentDateTime();
+        // getCurrentDateTime();
 
         // printf("helo %i %i %i",ant,tempTotalNote,activeNote);
         ch = _getch(); 
@@ -94,12 +106,12 @@ void keyControl(int totalNote,char key[4]) {
             ch = _getch();  
             if (ch == 72) { 
                 if (activeNote <= 0) {
-                    activeNote = tempTotalNote ;
+                    activeNote = tempTotalNote+1 ;
                 } else {
                     activeNote--;
                 }
             } elif (ch == 80) {  
-                if (activeNote >= tempTotalNote) {
+                if (activeNote >= tempTotalNote+1) {
                     activeNote = 0;
                 } else {
                     activeNote++;
@@ -109,6 +121,8 @@ void keyControl(int totalNote,char key[4]) {
             if(activePage==0){
                 if(activeNote==tempTotalNote  ){
                     createCategory();
+                }elif(activeNote==tempTotalNote+1){
+                    exit(1);
                 }else{
                     ant=activeNote;
                     gotoPage(1);
@@ -116,10 +130,27 @@ void keyControl(int totalNote,char key[4]) {
             }elif( activePage==1){
                 if(activeNote==tempTotalNote ){
                     createNote();
-                }else{
+                }elif(activeNote==tempTotalNote+1){
+                    activePage--;
+                    gotoPage(activePage);
+                }
+                else{
                     subAnt=activeNote;
                     gotoPage(2);
                 }
+            }
+            elif(activePage==2){
+
+                if(activeNote==tempTotalNote){
+                    gotoPage(3);
+                    // edit note
+                }elif(activeNote==tempTotalNote+1){
+                    deleteNote();
+                    // delete note
+                }else{
+                    gotoPage(1);
+                }
+                
             }
 
             
@@ -142,13 +173,14 @@ void keyControl(int totalNote,char key[4]) {
 }
 
 void boxofTitle(char color[],int *boxWidth,int i,char key[4]){
+ 
             printf("%s", color);fflush(stdout);
-            gotoxy(42, *boxWidth);
-            printf("+-----------------------+\n");fflush(stdout);
-            gotoxy(42, *boxWidth + 1);
+            gotoxy(mainX, *boxWidth);
+            printf("+------------------------------+\n");fflush(stdout);
+            gotoxy(mainX, *boxWidth + 1);
                printf("%s", color);fflush(stdout);
             printf("|");fflush(stdout);
-            gotoxy(50, *boxWidth + 1);
+            gotoxy(mainX+textX, *boxWidth + 1);
             if(strcmp(color,yellow)==0){
                 if(strcmp(key,"Mpp")==0){
                     printf(">> %s", Mpp[i].title);fflush(stdout);
@@ -165,12 +197,12 @@ void boxofTitle(char color[],int *boxWidth,int i,char key[4]){
                 }
 
             }
-            gotoxy(66, *boxWidth + 1);
+            gotoxy(mainX+lastborderX, *boxWidth + 1);
             printf("%s", color);fflush(stdout);
             printf("|");fflush(stdout);
-            gotoxy(42, *boxWidth + 2);
+            gotoxy(mainX, *boxWidth + 2);
             printf("%s", color);fflush(stdout);
-            printf("+-----------------------+\n");fflush(stdout);
+            printf("+------------------------------+\n");fflush(stdout);
             *boxWidth += 3;
 }
 
@@ -192,22 +224,48 @@ void displayPage(int totalNote,char key[4]) {
 
 
   
-    gotoxy(42, boxWidth + 3);
+    gotoxy(53, boxWidth + 3);
     if(i==activeNote){
     printf("%s", yellow);
-        
     }else{
-
     printf("%s", white);
     }
+    
     if(strcmp(key,"Mpp")==0){
         printf("+----add new category----+\n");fflush(stdout);
     }else{
         printf("+----add new note----+\n");fflush(stdout);
+    }
+    gotoxy(62, boxWidth + 5);
+    if(i+1==activeNote){
+    printf("%s", yellow);
+    }else{
+    printf("%s", white);
+    }
+    if(activePage==0){
+         printf("+exit+\n");fflush(stdout);
+    }else{
+         printf("+back+\n");fflush(stdout);
 
     }
     printf("%s", white);
 
+}
+void noteCurdOP(int pageY) {
+    
+    int i;
+    gotoxy(20,pageY+5);
+        for ( i = 0; i < 3; i++) {
+        if (i == activeNote) {
+            printf("%s",yellow);
+            printf("<< %s >>",noteCRUD[i]);
+        } else {
+            printf("%s",white);
+            printf(" %s ",noteCRUD[i]);
+        }
+    }
+    printf("%s",white);
+    printf("\n");
 }
 
 
@@ -232,12 +290,12 @@ notesDisplay();
 void header() {
     system("cls");
     printf("%s",green);   
-    gotoxy(40, 4);
-    printf("----------------------------------\n");
-    gotoxy(40, 5);
+    gotoxy(mainX-8, 4);
+    printf("--------------------------------------------------\n");
+    gotoxy(mainX, 5);
     printf("  ---------- \033[1mMy Note\033[0m%s ----------\n",green);
-    gotoxy(40, 6);
-    printf("----------------------------------\n");
+    gotoxy(mainX-8, 6);
+    printf("--------------------------------------------------\n");
     printf("%s",white);  
 
 }
@@ -247,6 +305,7 @@ void hero() {
 
     int totalNote;
     readCategory(&totalNote);
+    printf("%d",totalNote);
     if (Mpp != NULL) {
         keyControl(totalNote,"Mpp");
         free(Mpp); 
@@ -313,7 +372,7 @@ void notesDisplay(){
         free(Npp); 
     }
 
-    // keyControl(notesCNT,"Npp");
+    keyControl(notesCNT,"Npp");
 }
  void createNote(){
     system("cls");
@@ -355,34 +414,47 @@ void notesDisplay(){
     system("cls");
     header();
     int totalNote;
+    int pageY=15;
     readNotesById(totalNote);
 
-            gotoxy(20,15);
+            gotoxy(20,pageY);
             printf("title : %s\n",subNpp[subAnt].title);
+            pageY+=2;
             gotoxy(20,17);
-            printf("___________________________________________________");
+            printf("__________________________________________________________________________________________");
+            pageY+=2;
             gotoxy(20,19);
-            printf("content : %s",subNpp[subAnt].content);
+            int x=strlen(subNpp[subAnt].content);
+            printf("content : ");
+            int br=0;
+            for(int i=0;i<x;i++){
+                br++;
+                if(br>39){
+                    if(subNpp[subAnt].content[i]==32){
+                        pageY++;
+                    br=0;
+                    printf("\n\t\t\t\t\b\b\b");
+                    }
+                }
+                printf("%c",subNpp[subAnt].content[i]);
+            }
+     
 
-
-    getchar();
+    keyControl(pageY,"crud");
  }
 
 
 
 // ######### utils ##########
-void getCurrentDateTime() {
-  
-        time_t now = time(NULL);
-        struct tm *local = localtime(&now);
+// void getCurrentDateTime() {
+//     time_t now;
+//     time(&now);
 
-        gotoxy(50, 55); 
-        printf("%02d:%02d:%02d", local->tm_hour, local->tm_min, local->tm_sec);
-        Sleep(1000);
-        getCurrentDateTime();
-        // gotoxy(40,10);
- 
-}
+//     char* time_str = ctime(&now);
+
+//     printf("%s", time_str);
+  
+// }
 void gotoPage(int page){
     while(1){
         if(page==0){
@@ -396,12 +468,108 @@ void gotoPage(int page){
             notesContainer();
         }elif(page==2){
             activePage=2;
-            activeNote=subAnt;
+            activeNote=0;
             viewNote();
+        }elif(page==3){
+            activePage=3;
+            
+            editNote();
         }
     }
 
     
+}
+void editNote(){
+ system("cls");
+    header();
+    int totalNote;
+    int pageY=15;
+    char title[100];
+    int titleLen=strlen(title);
+    char content[1000];
+    readNotesById(totalNote);
+
+            gotoxy(20,pageY);
+            printf("current title : %s\n",subNpp[subAnt].title);
+  
+        pageY+=2;
+        gotoxy(20,pageY);
+        do{
+        printf("enter new title : ");
+        gets(title);
+        }while(strlen(title)<1);
+
+        
+           
+            pageY+=2;
+            gotoxy(20,pageY);
+            int x=strlen(subNpp[subAnt].content);
+            printf("current content : ");
+            int br=0;
+            for(int i=0;i<x;i++){
+                br++;
+                if(br>39){
+                    if(subNpp[subAnt].content[i]==32){
+                        pageY++;
+                    br=0;
+                    printf("\n\t\t\t\t\b\b\b");
+                    }
+                }
+                printf("%c",subNpp[subAnt].content[i]);
+            }
+            
+            do{
+            gotoxy(20,pageY+3);
+            printf("new content : ");
+     
+            gets(content);  
+            }while(strlen(content)<2);
+
+
+           int noteCnt;
+
+    readNotes(&noteCnt);
+    printf("%d",noteCnt);
+    FILE *fp;
+    fp=fopen("notes.txt","w");
+    fprintf(fp,"%d\n",noteCnt);
+    for(int i=0;i<noteCnt;i++){
+        if(Npp[i].id==subNpp[subAnt].id){
+        fprintf(fp,"%d\n%d\n%s\n%s\n",Npp[i].id,Npp[i].categoryID,title,content);
+
+        }else{
+
+        fprintf(fp,"%d\n%d\n%s\n%s\n",Npp[i].id,Npp[i].categoryID,Npp[i].title,Npp[i].content);
+        }
+    }
+
+
+
+         
+    fclose(fp);
+    gotoPage(2);
+     
+
+
+
+}
+void deleteNote(){
+    int ID;
+
+    ID=subNpp[subAnt].id;
+    int notesCNT;
+    readNotes(&notesCNT);
+    FILE *fp;
+    fp=fopen("notes.txt","w");
+    fprintf(fp,"%d\n",notesCNT-1);
+    for(int i=0;i<notesCNT;i++){
+        if(Npp[i].id!=ID){
+            fprintf(fp,"%d\n%d\n%s\n%s\n",Npp[i].id,Npp[i].categoryID,Npp[i].title,Npp[i].content);
+        }
+    }
+
+    fclose(fp);
+    gotoPage(1);
 }
 
 void readNotes(int *notesCNT){
@@ -412,6 +580,9 @@ void readNotes(int *notesCNT){
         exit(1);
     }
     fscanf(fr, "%d", notesCNT); 
+    if(*notesCNT>3000){
+        *notesCNT=0;
+    }
     Npp = (notePP *)malloc((*notesCNT) * sizeof(notePP));
        if (Npp == NULL) {
         printf("Memory allocation failed.\n");
@@ -452,6 +623,9 @@ void readCategory(int *totalNote) {
     }
 
     fscanf(fr, "%d", totalNote); 
+    if(*totalNote>3000){
+        *totalNote=0;
+    }
     Mpp = (catPP *)malloc((*totalNote) * sizeof(catPP));
     if (Mpp == NULL) {
         printf("Memory allocation failed.\n");
